@@ -6,7 +6,7 @@
 
 ## Prototype Milestones
 
-- ✅ **M0 - Repository.** Project created with README, ROADMAP, CHANGELOG, and a Rust workspace that builds with no external dependencies.
+- ✅ **M0 - Repository.** Project created with README, ROADMAP, CHANGELOG, a Rust workspace with no external dependencies, and a vendored dependency workflow with a CI security audit.
 - 📋 **M1 - Radar alive.** TI's demo visualizer shows points from a moving hand.
 - 📋 **M2 - Rust reads frames.** The hub reads radar frames at about 30 per second with no parse errors.
 - 📋 **M3 - Hand in a box.** A live 0 to 1 value follows the hand smoothly, and walking behind the zone does not move it.

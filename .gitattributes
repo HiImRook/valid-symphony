@@ -1,0 +1,2 @@
+vendor/* linguist-vendored=true
+crates/**/*.rs linguist-language=Rust

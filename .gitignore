@@ -1,6 +1,10 @@
 /target/
 **/target/
 *.rs.bk
+
+/vendor/
+.cargo/config.toml
+
 .env
 .vscode/
 .idea/

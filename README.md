@@ -26,6 +26,7 @@ Walking through the zone does nothing. Only a deliberate grab changes anything.
 - **No images.** Radar measures distance and motion. It cannot see faces or rooms.
 - **Your lights, your choice.** Works with the lights you already own, starting with LIFX and Zigbee.
 - **Open source.** All project code and hardware designs are public.
+- **Locked supply chain.** Every dependency is vendored and audited on each commit, and release builds run offline on a pinned Rust toolchain.
 - **Engineered, assembled, and chips designed in the USA.** Texas Instruments radar, designed in Dallas.
 
 ## Prototype Hardware

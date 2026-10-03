@@ -1,0 +1,32 @@
+name: Security Audit
+on: [push, pull_request]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --version 0.22.1 --locked
+      
+      - name: Vendor dependencies
+        run: cargo vendor vendor
+      
+      - name: Configure vendored build
+        run: |
+          mkdir -p .cargo
+          cat > .cargo/config.toml <<'CARGO_CONFIG'
+          [source.crates-io]
+          replace-with = "vendored-sources"
+          
+          [source.vendored-sources]
+          directory = "vendor"
+          CARGO_CONFIG
+      
+      - name: Run audit
+        run: cargo audit
+      
+      - name: Build offline
+        run: cargo build --release --locked --offline
