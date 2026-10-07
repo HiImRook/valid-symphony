@@ -1,6 +1,6 @@
 # Valid Symphony Roadmap
 
-**Current Version:** v0.0.2 - **Status: Prototype**
+**Current Version:** v0.0.3 - **Status: Prototype**
 
 ---
 

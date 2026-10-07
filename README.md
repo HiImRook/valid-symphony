@@ -23,7 +23,7 @@ Walking through the zone does nothing. Only a deliberate grab changes anything.
 
 - **Local only.** The sensor talks to a computer in your home, and that computer talks to your lights. Nothing reaches the internet.
 - **Nothing kept.** Hand positions exist in memory for a fraction of a second. No logs, no history, nothing written to disk.
-- **No images.** Radar measures distance and motion. It cannot see faces or rooms.
+- **No camera, no images.** Radar measures distance and motion.
 - **Your lights, your choice.** Works with the lights you already own, starting with LIFX and Zigbee.
 - **Open source.** All project code and hardware designs are public.
 - **Locked supply chain.** Every dependency is vendored and audited on each commit, and release builds run offline on a pinned Rust toolchain.
@@ -41,6 +41,8 @@ Walking through the zone does nothing. Only a deliberate grab changes anything.
 
 - **`symphony-core`**: hand tracking, the grab-and-release clutch, smoothing, and output pacing. Written once in Rust, built to run on the hub today and on the product's radar chip later.
 - **`symphony-hub`**: reads the radar over USB through a serial link written directly against the operating system, with no external crates, runs the core, and drives the lights through interchangeable backends (LIFX first, Zigbee and Home Assistant next).
+
+Notes on talking to the radar, including TI's configuration handshake and frame format, are in [docs/radar-protocol.md](docs/radar-protocol.md).
 
 ## Contributing
 

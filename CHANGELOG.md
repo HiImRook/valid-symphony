@@ -5,6 +5,15 @@ All notable changes to Valid Symphony will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.3] - 2026-10-07
+
+### Added
+- Radar protocol notes in `docs/radar-protocol.md`: serial settings, the configuration handshake, the baudRate switch, low-power mode and restarting, and the frame and point formats, with measured behavior marked as observed.
+
+### Changed
+- CI security audit now installs the pinned Rust 1.88.0 toolchain and pins both GitHub Actions to exact commits.
+- README privacy wording: no camera and no images, in place of the claim that radar cannot see rooms.
+
 ## [0.0.2] - 2026-10-07
 
 ### Added
