@@ -4,7 +4,7 @@
 
 Touchless home control. Hold your hand in the air, and your lights follow it. A 60 GHz radar reads where your hand is, and your home responds smoothly and instantly, with no camera, no microphone, no account, and no cloud.
 
-**Status: Prototype.** The first hardware is on order and development is starting. See [ROADMAP.md](ROADMAP.md) for what's planned and what's done.
+**Status: Prototype.** The radar board is running and the hub reads its frames live. See [ROADMAP.md](ROADMAP.md) for what's planned and what's done.
 
 **Community:** updates and discussion on the [Valid Discord](https://discord.gg/2SP383cJs9).
 
@@ -33,14 +33,14 @@ Walking through the zone does nothing. Only a deliberate grab changes anything.
 
 | Part | Role |
 | --- | --- |
-| TI IWR6843AOPEVM | 60 GHz radar evaluation board, streams 3D points over USB |
-| A Windows or Linux PC | Runs the control software |
+| TI IWRL6432AOPEVM | 60 GHz radar evaluation board, streams 3D points over USB |
+| A Windows PC | Runs the control software (Linux later) |
 | LIFX bulbs | First light backend, controlled over the local network |
 
 ## Architecture
 
 - **`symphony-core`**: hand tracking, the grab-and-release clutch, smoothing, and output pacing. Written once in Rust, built to run on the hub today and on the product's radar chip later.
-- **`symphony-hub`**: reads the radar over USB, runs the core, and drives the lights through interchangeable backends (LIFX first, Zigbee and Home Assistant next).
+- **`symphony-hub`**: reads the radar over USB through a serial link written directly against the operating system, with no external crates, runs the core, and drives the lights through interchangeable backends (LIFX first, Zigbee and Home Assistant next).
 
 ## Contributing
 
