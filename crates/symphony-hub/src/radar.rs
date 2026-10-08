@@ -46,7 +46,7 @@ impl fmt::Display for RadarError {
             ),
             RadarError::NoReply { command } => write!(
                 f,
-                "No reply to \"{command}\". The radar is probably still running a previous configuration. Press the board's reset button, or unplug and replug the USB cable, then run again."
+                "No reply to \"{command}\". Unplug and replug the board's USB cable, wait about 5 seconds, then run again."
             ),
             RadarError::BadBaud { command } => write!(f, "Could not read the baud rate in \"{command}\""),
             RadarError::NoStart => write!(f, "The config has no sensorStart line, so the radar would never start"),
@@ -80,21 +80,26 @@ pub fn configure<P: Port>(port: &mut P, lines: &[String], log: &mut dyn FnMut(&s
     if !lines.iter().any(|l| first_word(l) == CMD_START) {
         return Err(RadarError::NoStart);
     }
+    let fast_baud = lines
+        .iter()
+        .find(|l| first_word(l) == CMD_BAUD)
+        .map(|l| parse_baud(l))
+        .transpose()?;
     let mut baud = BOOT_BAUD;
-    for line in lines {
+    for (index, line) in lines.iter().enumerate() {
+        let word = first_word(line);
+        if word == CMD_BAUD && Some(baud) == fast_baud {
+            log(&format!("> {line}  skipped (already at {baud} baud)"));
+            continue;
+        }
         sleep(LINE_GAP);
         send_line(port, line, baud)?;
-        let word = first_word(line);
         if word == CMD_START {
             log(&format!("> {line}"));
             return Ok(());
         }
         if word == CMD_BAUD {
-            let value = line
-                .split_whitespace()
-                .nth(1)
-                .and_then(|v| v.parse::<u32>().ok())
-                .ok_or_else(|| RadarError::BadBaud { command: line.clone() })?;
+            let value = parse_baud(line)?;
             match wait_ack_for(port, BAUD_ACK_TIMEOUT)? {
                 Ack::Done => log(&format!("> {line}  ok")),
                 Ack::Error(reply) if reply.contains(ACK_ERROR_CODE) => {
@@ -109,7 +114,20 @@ pub fn configure<P: Port>(port: &mut P, lines: &[String], log: &mut dyn FnMut(&s
             log(&format!("  host switched to {value} baud"));
             continue;
         }
-        match wait_ack(port)? {
+        let mut ack = wait_ack(port)?;
+        if index == 0
+            && matches!(ack, Ack::Timeout)
+            && let Some(fast) = fast_baud
+        {
+            log(&format!("  no reply at {baud} baud, the radar may still be running at {fast} baud from a previous session"));
+            port.set_baud(fast)?;
+            port.clear_input()?;
+            sleep(BAUD_SETTLE);
+            baud = fast;
+            send_line(port, line, baud)?;
+            ack = wait_ack(port)?;
+        }
+        match ack {
             Ack::Done => log(&format!("> {line}  ok")),
             Ack::Error(reply) => {
                 if word == CMD_STOP {
@@ -122,6 +140,13 @@ pub fn configure<P: Port>(port: &mut P, lines: &[String], log: &mut dyn FnMut(&s
         }
     }
     Ok(())
+}
+
+fn parse_baud(line: &str) -> Result<u32, RadarError> {
+    line.split_whitespace()
+        .nth(1)
+        .and_then(|v| v.parse::<u32>().ok())
+        .ok_or_else(|| RadarError::BadBaud { command: line.to_string() })
 }
 
 fn first_word(line: &str) -> &str {
@@ -177,24 +202,28 @@ mod tests {
         replies: VecDeque<(&'static str, &'static str)>,
         bauds: Vec<u32>,
         clears: usize,
+        device_baud: u32,
     }
 
     impl MockPort {
         fn new(replies: &[(&'static str, &'static str)]) -> Self {
-            Self { written: Vec::new(), pending: VecDeque::new(), replies: replies.iter().copied().collect(), bauds: Vec::new(), clears: 0 }
+            Self { written: Vec::new(), pending: VecDeque::new(), replies: replies.iter().copied().collect(), bauds: Vec::new(), clears: 0, device_baud: BOOT_BAUD }
         }
     }
 
     impl Port for MockPort {
         fn write_all(&mut self, bytes: &[u8]) -> io::Result<()> {
             self.written.extend_from_slice(bytes);
-            if self.written.ends_with(b"\n") {
+            if self.written.ends_with(b"\n") && self.bauds.last().copied().unwrap_or(BOOT_BAUD) == self.device_baud {
                 let line = String::from_utf8_lossy(&self.written).lines().last().unwrap_or("").to_string();
                 if let Some((cmd, reply)) = self.replies.front().copied()
                     && line.starts_with(cmd)
                 {
                     self.replies.pop_front();
                     self.pending.extend(format!("{line}\r\n{reply}\r\nmmwDemo:/>").bytes());
+                }
+                if let Some(rate) = line.strip_prefix("baudRate ").and_then(|v| v.trim().parse().ok()) {
+                    self.device_baud = rate;
                 }
             }
             Ok(())
@@ -253,6 +282,19 @@ mod tests {
         assert_eq!(port.bauds, vec![1_250_000]);
         assert!(String::from_utf8_lossy(&port.written).ends_with("sensorStart 0 0 0 0\n"));
         assert!(log.iter().any(|l| l.contains("switched before replying")));
+        assert!(log.iter().any(|l| l.starts_with("> frameCfg") && l.ends_with("ok")));
+    }
+
+    #[test]
+    fn recovers_when_radar_is_still_at_fast_baud() {
+        let mut port = MockPort::new(&[("sensorStop", "Done"), ("channelCfg", "Done"), ("frameCfg", "Done")]);
+        port.device_baud = 1_250_000;
+        let cfg = lines(&["sensorStop 0", "channelCfg 7 3 0", "baudRate 1250000", "frameCfg 2 8 600 16 50 0", "sensorStart 0 0 0 0"]);
+        let mut log = Vec::new();
+        configure(&mut port, &cfg, &mut |m| log.push(m.to_string())).expect("configured");
+        assert_eq!(port.bauds, vec![1_250_000]);
+        assert!(log.iter().any(|l| l.contains("previous session")));
+        assert!(log.iter().any(|l| l.contains("skipped (already at 1250000 baud)")));
         assert!(log.iter().any(|l| l.starts_with("> frameCfg") && l.ends_with("ok")));
     }
 

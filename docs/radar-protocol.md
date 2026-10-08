@@ -120,6 +120,17 @@ Some profiles send uncompressed points instead: TLV 1 holds 16 bytes per point (
 - **Coarse velocity:** **Observed** Doppler steps of about 0.25 m/s.
 - **Coordinates:** relative to the sensor. y points straight out from the board's face, x is to the side, z is up and down. `sensorPosition` sets the mounting height and tilt used by the demo's own boundary boxes. **Observed:** the point coordinates we read stayed relative to the board.
 
+## Tuning for Hand Control
+
+Findings from adapting `MotionDetect.cfg` for close-range hand tracking (Valid Symphony's `configs/symphony-hand.cfg`). All **observed** on our board.
+
+- **Frame rate:** changing `frameCfg 2 8 600 16 200 0` to `frameCfg 2 8 600 16 50 0` gave a steady 20 frames per second with no other changes.
+- **Range:** `rangeSelCfg 0.25 1.2` was accepted and limits detections to about 1.2 m.
+- **Low power off:** `lowPowerCfg 0` was accepted. In this mode `sensorStop` should work, so a host can restart the sensor without a replug.
+- **Clutter removal must stay on.** With `clutterRemoval 0`, a moving hand stopped producing points altogether. The only detections left were a fixed object near the threshold, always at exactly zero velocity. With `clutterRemoval 1`, the moving hand returned clearly. Turning it off does not make a still hand visible in this demo.
+- **Elevation is coarse by default.** In `sigProcChainCfg 64 4 ...`, the second value appears to be the elevation angle step count. With 4, every point's height came out at one of three angles: level, about 30 degrees up, or about 30 degrees down (height divided by distance was always 0 or about 0.5). Azimuth, set to 64, varied smoothly. The antenna array is also narrower vertically than horizontally, so elevation will always be the less precise axis.
+- **Velocity steps** stayed at about 0.25 m/s, the same as the original profile.
+
 ## Source
 
 The Rust implementation lives in `crates/symphony-hub/src`: `serial.rs` (Windows serial port), `radar.rs` (configuration and the baudRate handshake), and `frame.rs` (frame reader and point decoding).

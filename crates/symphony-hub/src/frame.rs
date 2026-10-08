@@ -25,26 +25,12 @@ pub struct Point {
     pub snr: f32,
 }
 
-impl Point {
-    pub fn distance(&self) -> f32 {
-        (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
-    }
-}
-
 #[derive(Debug)]
 pub struct Frame {
     pub number: u32,
     pub detected: u32,
     pub tlvs: Vec<(u32, u32)>,
     pub points: Vec<Point>,
-}
-
-impl Frame {
-    pub fn nearest(&self) -> Option<&Point> {
-        self.points
-            .iter()
-            .min_by(|a, b| a.distance().total_cmp(&b.distance()))
-    }
 }
 
 pub struct FrameReader {
@@ -272,7 +258,7 @@ mod tests {
         assert!((f.points[0].doppler + 0.3).abs() < 1e-6);
         assert!((f.points[0].snr - 15.0).abs() < 1e-6);
         assert_eq!(f.tlvs, vec![(TLV_POINTS_COMPRESSED, 40), (306, 20)]);
-        assert!((f.nearest().expect("nearest").y - 0.50).abs() < 1e-6);
+        assert!(f.points.iter().any(|p| (p.y - 0.50).abs() < 1e-6));
         assert_eq!(r.skipped(), 0);
     }
 

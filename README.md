@@ -4,7 +4,7 @@
 
 Touchless home control. Hold your hand in the air, and your lights follow it. A 60 GHz radar reads where your hand is, and your home responds smoothly and instantly, with no camera, no microphone, no account, and no cloud.
 
-**Status: Prototype.** The radar board is running and the hub reads its frames live. See [ROADMAP.md](ROADMAP.md) for what's planned and what's done.
+**Status: Prototype.** The radar board is running, and the hub tracks a moving hand live. Hand control is built and being tuned on the board. See [ROADMAP.md](ROADMAP.md) for what's planned and what's done.
 
 **Community:** updates and discussion on the [Valid Discord](https://discord.gg/2SP383cJs9).
 
